@@ -1,4 +1,6 @@
 # Perlin Noise Generator
+Now on my portfolio site!!! See it action: https://portfolio.agreenweb.com/perlin?w0=perlin():0:0!:0!:96!:96!:1
+
 This is based on my [Game-of-Life](https://github.com/gusjengis/Game-of-Life) repo (see for information about setup). Implemented Perlin Noise from scratch, going to try to evolve this into a terrain generator.
 
 Screenshots from the lastest update (Below). Zoomed in on a smaller section of the landscape, flattened oceans, color-coded different altitudes, added diffuse lighting.
