@@ -65,15 +65,15 @@ fn randFromCoord(coord: vec2<u32>, max: f32) -> f32{
     return max*f32(seed)/4294967296.0;
 }
 
-fn wang_hash(seed: u32) -> u32
-{
-    var seed = (seed ^ 61u) ^ (seed >> 16u);
-    seed *= 9u;
-    seed = seed ^ (seed >> 4u);
-    seed *= 0x27d4eb2du;
-    seed = seed ^ (seed >> 15u);
-    return seed;
-}
+// fn wang_hash(seed: u32) -> u32
+// {
+//     var seed = (seed ^ 61u) ^ (seed >> 16u);
+//     seed *= 9u;
+//     seed = seed ^ (seed >> 4u);
+//     seed *= 0x27d4eb2du;
+//     seed = seed ^ (seed >> 15u);
+//     return seed;
+// }
 
 fn count_neighbors(pix_coord: vec2<i32> ) -> i32 {
   var sum = 0;

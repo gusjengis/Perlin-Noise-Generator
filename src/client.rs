@@ -43,10 +43,10 @@ pub struct Client {
     A: bool,
     S: bool,
     D: bool,
-    G: bool,
-    V: bool,
-    B: bool,
-    N: bool,
+    I: bool,
+    J: bool,
+    K: bool,
+    L: bool,
     init: bool,
 }
 
@@ -84,10 +84,10 @@ impl Client {
         let A = false;
         let S = false;
         let D = false;
-        let G = false;
-        let V = false;
-        let B = false;
-        let N = false;
+        let I = false;
+        let J = false;
+        let K = false;
+        let L = false;
         let init = false;
         let mut client = Client {
             canvas,
@@ -115,10 +115,10 @@ impl Client {
             A,
             S,
             D,
-            G,
-            V,
-            B,
-            N,
+            I,
+            J,
+            K,
+            L,
             init,
         };
 
@@ -298,55 +298,61 @@ impl Client {
 
     pub fn input(&mut self, event: &WindowEvent) -> bool {
         match event {
-            WindowEvent::MouseInput { state: ElementState::Pressed, button: MouseButton::Right, .. } => {
-                let mut coords = self.cursorToPixel();
-                match coords {
-                    Some(value) => {
-                        if(!self.toggle){
-                            let pixel = coords.unwrap();
-                            self.writeToTex(pixel, &[0 as u8, 0 as u8, 0 as u8, 0 as u8]);
-                        }
-                        return true;
-                    }
-                    None => {return true;}
-                }
-            },
-            WindowEvent::MouseInput { state: ElementState::Pressed, button: MouseButton::Left, .. } => {
-                let mut coords = self.cursorToPixel();
-                match coords {
-                    Some(value) => {
-                        if(!self.toggle){
-                            let pixel = coords.unwrap();
-                            self.writeToTex(pixel, &[255 as u8, 255 as u8, 255 as u8, 255 as u8]);
-                        }
-                        return true;
-                    }
-                    None => {return true;}
-                }
-            },
-            WindowEvent::MouseInput { state: ElementState::Pressed, button: MouseButton::Middle, .. } => {
-                self.middle = true;
-                return true;
-            },
-            WindowEvent::MouseInput { state: ElementState::Released, button: MouseButton::Middle, .. } => {
-                self.middle = false;
-                return true;
-            }
+            // WindowEvent::MouseInput { state: ElementState::Pressed, button: MouseButton::Right, .. } => {
+            //     let mut coords = self.cursorToPixel();
+            //     match coords {
+            //         Some(value) => {
+            //             if(!self.toggle){
+            //                 let pixel = coords.unwrap();
+            //                 self.writeToTex(pixel, &[0 as u8, 0 as u8, 0 as u8, 0 as u8]);
+            //             }
+            //             return true;
+            //         }
+            //         None => {return true;}
+            //     }
+            // },
+            // WindowEvent::MouseInput { state: ElementState::Pressed, button: MouseButton::Left, .. } => {
+            //     let mut coords = self.cursorToPixel();
+            //     match coords {
+            //         Some(value) => {
+            //             if(!self.toggle){
+            //                 let pixel = coords.unwrap();
+            //                 self.writeToTex(pixel, &[255 as u8, 255 as u8, 255 as u8, 255 as u8]);
+            //             }
+            //             return true;
+            //         }
+            //         None => {return true;}
+            //     }
+            // },
+            // WindowEvent::MouseInput { state: ElementState::Pressed, button: MouseButton::Middle, .. } => {
+            //     self.middle = true;
+            //     return true;
+            // },
+            // WindowEvent::MouseInput { state: ElementState::Released, button: MouseButton::Middle, .. } => {
+            //     self.middle = false;
+            //     return true;
+            // }
             WindowEvent::MouseWheel { device_id, delta, phase, modifiers } => {
                 let mut mY = 0.0;
-                match delta {
+                match delta {       //TO-DO Doesn't seem to work on website, please fix
                     MouseScrollDelta::LineDelta(x, y) => {
                         mY = *y;
-                        self.scale = (self.scale as f32*((2 as f32).powf(mY)));
-                        self.xOff *= ((2 as f32).powf(mY));
-                        self.yOff *= ((2 as f32).powf(mY));
+                        // self.scale = (self.scale as f32*((2 as f32).powf(mY)));
+                        if(mY>0.0){
+                            self.wgpu_prog.cam.zoom(10.0);
+                        } else if(mY < 0.0) {
+                            self.wgpu_prog.cam.zoom(-10.0);
+                        }
+
+                        // self.xOff *= ((2 as f32).powf(mY));
+                        // self.yOff *= ((2 as f32).powf(mY));
                     }
                     _ => {}
                 }
                 if(self.scale < 1.0){ 
                     self.scale = 1.0; 
-                    self.xOff /= ((2 as f32).powf(mY));
-                    self.yOff /= ((2 as f32).powf(mY));
+                    // self.xOff /= ((2 as f32).powf(mY));
+                    // self.yOff /= ((2 as f32).powf(mY));
                 }
                 // if(self.temp > self.scale as f32 - 1.0){
                 //     self.temp = self.scale as f32 - 1.0;
@@ -357,23 +363,23 @@ impl Client {
                 return true;
 
             },
-            WindowEvent::CursorMoved { position, .. } => {
-                let delta = (position.x as i32 - self.cursor_pos.0, position.y as i32 - self.cursor_pos.1);
-                self.cursor_pos = (position.x as i32, position.y as i32);
-                if(self.middle){
-                    // let aspect = self.wgpu_config.size.width as f32/self.wgpu_config.size.height as f32;//println!("{}", self.wgpu_config.size.width as f32/self.wgpu_config.size.height as f32);
-                    self.xOff += (delta.0 as f32) as f32;
-                    self.yOff += (delta.1 as f32) as f32;
-                }
-                // self.clear_color = wgpu::Color {
-                //     r: position.x as f64 / self.size.width as f64,
-                //     g: position.y as f64 / self.size.height as f64,
-                //     b: (position.x + position.y)as f64 / 2.0* self.size.width as f64,
-                //     a: 1.0,
-                // };
-                // self.cursor_uniform.updateUniform(&self.device, bytemuck::cast_slice(&[position.x as f32, position.y as f32, position.x as f32, position.y as f32]));
-                return true;
-            },
+            // WindowEvent::CursorMoved { position, .. } => {
+            //     let delta = (position.x as i32 - self.cursor_pos.0, position.y as i32 - self.cursor_pos.1);
+            //     self.cursor_pos = (position.x as i32, position.y as i32);
+            //     if(self.middle){
+            //         // let aspect = self.wgpu_config.size.width as f32/self.wgpu_config.size.height as f32;//println!("{}", self.wgpu_config.size.width as f32/self.wgpu_config.size.height as f32);
+            //         self.xOff += (delta.0 as f32) as f32;
+            //         self.yOff += (delta.1 as f32) as f32;
+            //     }
+            //     // self.clear_color = wgpu::Color {
+            //     //     r: position.x as f64 / self.size.width as f64,
+            //     //     g: position.y as f64 / self.size.height as f64,
+            //     //     b: (position.x + position.y)as f64 / 2.0* self.size.width as f64,
+            //     //     a: 1.0,
+            //     // };
+            //     // self.cursor_uniform.updateUniform(&self.device, bytemuck::cast_slice(&[position.x as f32, position.y as f32, position.x as f32, position.y as f32]));
+            //     return true;
+            // },
             WindowEvent::KeyboardInput { input, .. } => {
                 match input {
                     KeyboardInput {
@@ -394,65 +400,80 @@ impl Client {
                                 self.toggle = !self.toggle;
                                 return true;
                             },
+                    // KeyboardInput {
+                    //     virtual_keycode: Some(VirtualKeyCode::R),
+                    //     state: ElementState::Pressed,
+                    //     ..
+                    // } => {
+                    //         // self.temp = 1.0;
+                    //         self.start_time = Local::now();
+                    //         self.wgpu_prog.shader_prog = WGPUComputeProg::new(&self.wgpu_config);
+                    //         self.toggle = false;
+                    //         self.generation = 0;
+                    //         return true;
+                    //     },
                     KeyboardInput {
-                        virtual_keycode: Some(VirtualKeyCode::R),
+                        virtual_keycode: Some(VirtualKeyCode::I), // forward
                         state: ElementState::Pressed,
                         ..
                     } => {
-                            // self.temp = 1.0;
-                            self.start_time = Local::now();
-                            self.wgpu_prog.shader_prog = WGPUComputeProg::new(&self.wgpu_config);
-                            self.toggle = false;
-                            self.generation = 0;
+                            self.I = true;
                             return true;
                         },
                     KeyboardInput {
-                        virtual_keycode: Some(VirtualKeyCode::G), // forward
+                        virtual_keycode: Some(VirtualKeyCode::K), // backward
                         state: ElementState::Pressed,
                         ..
                     } => {
-                            // self.G = true;
-                            let camera = &mut self.wgpu_prog.cam;
-                            let forward = camera.target - camera.eye;
-                            let forward_norm = forward.normalize();
-                            camera.eye += forward_norm * camera.speed;
+                            self.K = true;
                             return true;
                         },
                     KeyboardInput {
-                        virtual_keycode: Some(VirtualKeyCode::B), // backward
+                        virtual_keycode: Some(VirtualKeyCode::J), // left
                         state: ElementState::Pressed,
                         ..
                     } => {
-                            let camera = &mut self.wgpu_prog.cam;
-                            let forward = camera.target - camera.eye;
-                            let forward_norm = forward.normalize();
-                            camera.eye -= forward_norm * camera.speed;
+                            self.J = true;
                             return true;
                         },
                     KeyboardInput {
-                        virtual_keycode: Some(VirtualKeyCode::V), // left
+                        virtual_keycode: Some(VirtualKeyCode::L), // right
                         state: ElementState::Pressed,
                         ..
                     } => {
-                            let camera = &mut self.wgpu_prog.cam;
-                            let forward = camera.target - camera.eye;
-                            let forward_norm = forward.normalize();
-                            let forward_mag = forward.magnitude();
-                            let right = forward_norm.cross(camera.up);
-                            camera.eye = camera.target - (forward - right * camera.speed).normalize() * forward_mag;
+                            self.L = true;
                             return true;
                         },
                     KeyboardInput {
-                        virtual_keycode: Some(VirtualKeyCode::N), // right
-                        state: ElementState::Pressed,
+                        virtual_keycode: Some(VirtualKeyCode::I), // forward
+                        state: ElementState::Released,
                         ..
                     } => {
-                            let camera = &mut self.wgpu_prog.cam;
-                            let forward = camera.target - camera.eye;
-                            let forward_norm = forward.normalize();
-                            let forward_mag = forward.magnitude();
-                            let right = forward_norm.cross(camera.up);
-                            camera.eye = camera.target - (forward + right * camera.speed).normalize() * forward_mag;
+                            self.I = false;
+                            return true;
+                        },
+                    KeyboardInput {
+                        virtual_keycode: Some(VirtualKeyCode::K), // backward
+                        state: ElementState::Released,
+                        ..
+                    } => {
+                            self.K = false;
+                            return true;
+                        },
+                    KeyboardInput {
+                        virtual_keycode: Some(VirtualKeyCode::J), // left
+                        state: ElementState::Released,
+                        ..
+                    } => {
+                            self.J = false;
+                            return true;
+                        },
+                    KeyboardInput {
+                        virtual_keycode: Some(VirtualKeyCode::L), // right
+                        state: ElementState::Released,
+                        ..
+                    } => {
+                            self.L = false;
                             return true;
                         },
                     KeyboardInput {
@@ -465,28 +486,28 @@ impl Client {
                             self.yOff = 0.0;
                             return true;
                         },
-                    KeyboardInput {
-                        virtual_keycode: Some(VirtualKeyCode::C),
-                        state: ElementState::Pressed,
-                        ..
-                    } => {
-                            // self.temp = 1.0;
-                            self.start_time = Local::now();
-                            self.wgpu_prog.shader_prog = WGPUComputeProg::new(&self.wgpu_config);
-                            self.toggle = false;
-                            self.generation = 0;
-                            self.wgpu_prog.shader_prog.clearTextures(&self.wgpu_config);
-                            return true;
-                        },
+                    // KeyboardInput {
+                    //     virtual_keycode: Some(VirtualKeyCode::C),
+                    //     state: ElementState::Pressed,
+                    //     ..
+                    // } => {
+                    //         // self.temp = 1.0;
+                    //         self.start_time = Local::now();
+                    //         self.wgpu_prog.shader_prog = WGPUComputeProg::new(&self.wgpu_config);
+                    //         self.toggle = false;
+                    //         self.generation = 0;
+                    //         self.wgpu_prog.shader_prog.clearTextures(&self.wgpu_config);
+                    //         return true;
+                    //     },
                     
-                    KeyboardInput {
-                        virtual_keycode: Some(VirtualKeyCode::L),
-                        state: ElementState::Pressed,
-                        ..
-                    } => {
-                            self.HL = !self.HL;
-                            return true;
-                        },
+                    // KeyboardInput {
+                    //     virtual_keycode: Some(VirtualKeyCode::L),
+                    //     state: ElementState::Pressed,
+                    //     ..
+                    // } => {
+                    //         self.HL = !self.HL;
+                    //         return true;
+                    //     },
                     KeyboardInput {
                         virtual_keycode: Some(VirtualKeyCode::W),
                         state: ElementState::Pressed,
@@ -628,8 +649,11 @@ impl Client {
         //     b: rng.gen::<f64>()/1.0,
         //     a: 1.0,
         // };
-        let camera = &self.wgpu_prog.cam;
+        let camera = &mut self.wgpu_prog.cam;
         let forward = camera.target - camera.eye;
+        let forward_norm = forward.normalize();
+        let forward_mag = forward.magnitude();
+        let right = forward_norm.cross(camera.up);
         let xzMag = (forward.x.powf(2.0) + forward.z.powf(2.0)).powf(0.5);
         let xzNorm = (forward.x / xzMag, forward.z / xzMag);
         let angle = xzNorm.1.atan2(xzNorm.0);
@@ -638,11 +662,20 @@ impl Client {
         if(self.S){ self.xOff -= move_speed * angle.cos(); self.yOff -= move_speed * angle.sin(); }
         if(self.D){ self.xOff -= move_speed * angle.sin(); self.yOff += move_speed * angle.cos(); }
         if(self.W){ self.xOff += move_speed * angle.cos(); self.yOff += move_speed * angle.sin();}
+
+        if(self.I){ camera.eye += forward_norm * camera.speed; }
+        if(self.K){ camera.eye -= forward_norm * camera.speed; }
+        if(self.J){ camera.eye = camera.target - (forward + right * camera.speed).normalize() * forward_mag; }
+        if(self.L){ camera.eye = camera.target - (forward - right * camera.speed).normalize() * forward_mag; }
         
         if(self.xOff < -400.0) { self.xOff = 400.0;}
         if(self.xOff > 400.0) { self.xOff = -400.0;}
         if(self.yOff < -400.0) { self.yOff = 400.0;}
         if(self.yOff > 400.0) { self.yOff = -400.0;}
+
+        // camera.target.x = self.xOff;
+        // camera.target.z = self.yOff;
+
         let mut time = 1;//Local::noD().timestamp_millis() - self.start_time.timestamp_millis();
         if(!self.HL){
             time = 0;
@@ -775,10 +808,10 @@ impl Client {
                 #[cfg(target_arch = "wasm32")] {
                     log::warn!("FPS: {}", 1000000.0/(now.timestamp_micros() - self.last_draw.timestamp_micros()) as f32);
                 }
-                println!("Generations/s: {}, Total Generations: {}", (self.generation - self.prevGen) as f32/time_since, self.generation);
-                println!("Generations/Update: {}, Time Between Updates(ms): {}", self.genPerFrame as f32, self.generations);
-                println!("Scale: {}, (xOff, yOff): ({}, {})", self.scale as f32, self.xOff, self.yOff);
-                println!("Height: {}", self.temp as f32);
+                // println!("Generations/s: {}, Total Generations: {}", (self.generation - self.prevGen) as f32/time_since, self.generation);
+                // println!("Generations/Update: {}, Time Between Updates(ms): {}", self.genPerFrame as f32, self.generations);
+                // println!("Scale: {}, (xOff, yOff): ({}, {})", self.scale as f32, self.xOff, self.yOff);
+                // println!("Height: {}", self.temp as f32);
                 self.prevGen = self.generation;
                 self.bench_start_time = Local::now();
                 

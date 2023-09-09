@@ -95,10 +95,10 @@ impl WGPUProg {
         let cam = Camera::new(&config);
         let cam_uniform = Uniform::new(&config.device, bytemuck::cast_slice(&[cam.view_proj,  cam.eye(), cam.target()]), String::from("dimensions"), 7);
         
-        let tex1 = Texture::new(&config, include_bytes!("../golBase.png"), 0);
+        let tex1 = Texture::new(&config, include_bytes!("../golBase.png"), 0, false);
 
         // let tex2 = Texture::new(&config, image, 4);
-        let tex2 = Texture::new(&config, include_bytes!("../golBase.png"), 3);
+        let tex2 = Texture::new(&config, include_bytes!("../golBase.png"), 3, false);
 
         let depth_buffer = DepthBuffer::new(&config.device, &config.config, "depth_texture");
         // let buffer2 = Uniform::new(&config.device, golBase, String::from("dimensions"), 6);
@@ -280,8 +280,8 @@ impl WGPUComputeProg {
         //create resources
         // let golBase = &[0 as u8; 256*256 as usize];
 
-        let mut tex1 = Texture::new(&config, include_bytes!("../golBase.png"), 0);
-        let mut tex2 = Texture::new(&config, include_bytes!("../golBase.png"), 1);
+        let mut tex1 = Texture::new(&config, include_bytes!("../golBase.png"), 0, true);
+        let mut tex2 = Texture::new(&config, include_bytes!("../golBase.png"), 1, true);
         let dim_contents = &[0 as f32, 0 as f32, 0 as f32, 0 as f32];
         let uniform = Uniform::new(&config.device, bytemuck::cast_slice(dim_contents), String::from("dimensions"), 3);
         // let buffer1 = BufferUniform::new(&config.device, golBase, String::from("dimensions"), 5);
@@ -332,8 +332,8 @@ impl WGPUComputeProg {
     }
 
     pub fn clearTextures(&mut self, config: &WGPUConfig){
-        self.tex1 = Texture::new(&config, include_bytes!("../golClear.png"), 0);
-        self.tex2 = Texture::new(&config, include_bytes!("../golClear.png"), 1);
+        self.tex1 = Texture::new(&config, include_bytes!("../golClear.png"), 0, false);
+        self.tex2 = Texture::new(&config, include_bytes!("../golClear.png"), 1, false);
         self.swap(config);
     }
 

@@ -1,4 +1,5 @@
 use crate::wgpu_config::WGPUConfig;
+use cgmath::InnerSpace;
 use wgpu::util::DeviceExt;
 
 
@@ -141,7 +142,7 @@ pub struct Texture{
 }
 
 impl Texture {
-    pub fn new(config: &WGPUConfig, bytes: &[u8], binding: u32) -> Self {
+    pub fn new(config: &WGPUConfig, bytes: &[u8], binding: u32, storage: bool) -> Self {
         let diffuse_image = image::load_from_memory(bytes).unwrap();
         let diffuse_rgba = diffuse_image.to_rgba8();
 
@@ -154,6 +155,13 @@ impl Texture {
             depth_or_array_layers: 1,
         };
 
+        let mut format = wgpu::TextureFormat::Rgba8UnormSrgb;
+        let mut usage = wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST;
+        if storage {
+            format = wgpu::TextureFormat::Rgba8Unorm;
+            usage = wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::STORAGE_BINDING | wgpu::TextureUsages::COPY_DST;
+        }
+
         let diffuse_texture = config.device.create_texture(
             &wgpu::TextureDescriptor {
                 // All textures are stored as 3D, we represent our 2D texture
@@ -163,10 +171,10 @@ impl Texture {
                 sample_count: 1,
                 dimension: wgpu::TextureDimension::D2,
                 // Most images are stored using sRGB so we need to reflect that here.
-                format: wgpu::TextureFormat::Rgba8Unorm,
+                format: format,
                 // TEXTURE_BINDING tells wgpu that we want to use this texture in shaders
                 // COPY_DST means that we want to copy data to this texture
-                usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::STORAGE_BINDING | wgpu::TextureUsages::COPY_DST,
+                usage: usage,
                 label: Some("diffuse_texture"),
                 // This is the same as with the SurfaceConfig. It
                 // specifies what texture formats can be used to
@@ -175,7 +183,7 @@ impl Texture {
                 // always supported. Note that using a different
                 // texture format is not supported on the WebGL2
                 // backend.
-                view_formats: &[],
+                view_formats: &[wgpu::TextureFormat::Rgba8Unorm, wgpu::TextureFormat::Rgba8UnormSrgb],
             }
         );
 
@@ -198,7 +206,17 @@ impl Texture {
             texture_size,
         );
 
-        let diffuse_texture_view = diffuse_texture.create_view(&wgpu::TextureViewDescriptor::default());
+        let diffuse_texture_view = diffuse_texture.create_view(&wgpu::TextureViewDescriptor {
+            label: Some("diffuse_texture"),
+            format: Some(format),
+            dimension: Some(wgpu::TextureViewDimension::default()),
+            aspect: wgpu::TextureAspect::All,
+            base_mip_level: 0,
+            mip_level_count: None,
+            base_array_layer: 0,
+            array_layer_count: None,
+        });
+        
         let diffuse_sampler = config.device.create_sampler(&wgpu::SamplerDescriptor {
             address_mode_u: wgpu::AddressMode::ClampToEdge,
             address_mode_v: wgpu::AddressMode::ClampToEdge,
@@ -263,7 +281,18 @@ impl Texture {
     }
 
     pub fn setBinding(&mut self, config: &WGPUConfig, binding: u32, storage: bool){
+        let mut diffuse_texture_view = self.texture.create_view(&wgpu::TextureViewDescriptor {
+                label: Some("diffuse_texture"),
+                format: Some(wgpu::TextureFormat::Rgba8UnormSrgb),
+                dimension: Some(wgpu::TextureViewDimension::default()),
+                aspect: wgpu::TextureAspect::All,
+                base_mip_level: 0,
+                mip_level_count: None,
+                base_array_layer: 0,
+                array_layer_count: None,
+            });
         if(!storage){
+            
             let texture_bind_group_layout =
             config.device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
                 entries: &[
@@ -295,7 +324,7 @@ impl Texture {
                     entries: &[
                         wgpu::BindGroupEntry {
                             binding: binding,
-                            resource: wgpu::BindingResource::TextureView(&self.view),
+                            resource: wgpu::BindingResource::TextureView(&diffuse_texture_view),
                         },
                         wgpu::BindGroupEntry {
                             binding: binding+1,
@@ -308,6 +337,16 @@ impl Texture {
             self.bind_group_layout = texture_bind_group_layout;
             self.diffuse_bind_group = bind_group;
         } else {
+            diffuse_texture_view = self.texture.create_view(&wgpu::TextureViewDescriptor {
+                label: Some("diffuse_texture"),
+                format: Some(wgpu::TextureFormat::Rgba8Unorm),
+                dimension: Some(wgpu::TextureViewDimension::default()),
+                aspect: wgpu::TextureAspect::All,
+                base_mip_level: 0,
+                mip_level_count: None,
+                base_array_layer: 0,
+                array_layer_count: None,
+            });
             let texture_bind_group_layout =
             config.device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
                 label: Some("storage_texture_bind_group_layout"),
@@ -332,7 +371,7 @@ impl Texture {
                     entries: &[
                         wgpu::BindGroupEntry {
                             binding: binding,
-                            resource: wgpu::BindingResource::TextureView(&self.view),
+                            resource: wgpu::BindingResource::TextureView(&diffuse_texture_view),
                         },
                     ],
                     label: Some("diffuse_bind_group"),
@@ -534,6 +573,13 @@ impl Camera {
         self.aspect = config.size.width as f32 / config.size.height as f32;
         self.view_proj = self.build_view_projection_matrix().into();
         // self.rot_mat = 
+    }
+
+    pub fn zoom(&mut self, zoom: f32){
+        let forward = self.target - self.eye;
+        let forward_norm = forward.normalize();
+        let mag = (self.target - self.eye).magnitude();
+        self.eye += forward_norm * mag/(zoom);
     }
 }
  

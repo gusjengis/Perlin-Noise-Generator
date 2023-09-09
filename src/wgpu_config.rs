@@ -114,6 +114,7 @@ impl WGPUConfig {
         // Shader code in this tutorial assumes an sRGB surface texture. Using a different
         // one will result all the colors coming out darker. If you want to support non
         // sRGB surfaces, you'll need to account for that when drawing to the frame.
+        let format = surface_caps.formats[0];
         let surface_format = surface_caps.formats.iter()
             .copied()
             .filter(|f| f.is_srgb())// this line is sus, changed f.describe().srgb to f.is_srgb(), describe was not a thing
@@ -121,12 +122,12 @@ impl WGPUConfig {
             .unwrap_or(surface_caps.formats[0]);
         let config = wgpu::SurfaceConfiguration {
             usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
-            format: surface_format,
+            format: format.remove_srgb_suffix(),
             width: size.width,
             height: size.height,
             present_mode: surface_caps.present_modes[0],
             alpha_mode: surface_caps.alpha_modes[0],
-            view_formats: vec![],
+            view_formats: vec![format.add_srgb_suffix(), format.remove_srgb_suffix()],
         };
         surface.configure(&device, &config);
     

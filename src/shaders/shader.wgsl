@@ -267,8 +267,10 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
     let snowThresh = 1.1 + perlinFilter(coord)/8.0;
     let sandThresh = 0.1 + perlinFilter(coord)/8.0;
     let lightPos = (vec3(dim.xOff, dim.temp*2.6, dim.yOff));
-    let lightDir = normalize(lightPos - in.vertex_pos);
-    let brightness = max(dot3D(in.normal, lightDir), 0.0);
+    let lightDelta = lightPos - in.vertex_pos;
+    let lightDir = normalize(lightDelta);
+    let lightDist = length(lightDelta);
+    let brightness = max(dot3D(in.normal, lightDir), 0.0) * 1.0/max(pow(lightDist/100.0, 2.0), 1.0);
     let eye = vec3(cam.eye[0][0], cam.eye[0][1], cam.eye[0][2]);
     let focus = in.vertex_pos;//vec3(cam.focus[0][0], cam.focus[0][1], cam.focus[0][2]);
     let camDir =  normalize(focus - eye);
@@ -323,7 +325,7 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
         }
     
     //SRGB Mapping
-        color = SRGB(color);
+        // color = SRGB(color);
         out = SRGB(out);
 
     return out;//color;//out;//* pixColor.r;//vec4(out.r, out.g, out.b, 1.0);
@@ -339,12 +341,12 @@ fn invert(color: vec4<f32>) -> vec4<f32> {
 
 }
 fn SRGB(color: vec4<f32>) -> vec4<f32> {
-    var clone = color;
-    clone.r = pow(clone.r, (2.2));
-    clone.g = pow(clone.g, (2.2));
-    clone.b = pow(clone.b, (2.2));  
+    var clone = vec4(color.r, color.g, color.b, color.a);
+    clone.r = pow(clone.r, (1.0/2.2));
+    clone.g = pow(clone.g, (1.0/2.2));
+    clone.b = pow(clone.b, (1.0/2.2));  
 
-    return color;
+    return clone;
 }
 
 fn perlInterpSamp(tex: texture_2d<f32>, tex_coords: vec2<f32>) -> vec4<f32> {
@@ -452,17 +454,17 @@ fn iterateMandelbrot(coord: vec2<f32>) -> f32 {
 }
 
 fn count_neighbors_neighbors(pix_coord: vec2<i32> ) -> i32 {
-    var min = 8;
-    min = min(min, count_neighbors(vec2(pix_coord.x + 1, pix_coord.y + 1)));
-    min = min(min, count_neighbors(vec2(pix_coord.x + 0, pix_coord.y + 1)));
-    min = min(min, count_neighbors(vec2(pix_coord.x - 1, pix_coord.y + 1)));
-    min = min(min, count_neighbors(vec2(pix_coord.x - 1, pix_coord.y + 0)));
-    min = min(min, count_neighbors(vec2(pix_coord.x + 1, pix_coord.y + 0)));
-    min = min(min, count_neighbors(vec2(pix_coord.x - 1, pix_coord.y - 1)));
-    min = min(min, count_neighbors(vec2(pix_coord.x + 0, pix_coord.y - 1)));
-    min = min(min, count_neighbors(vec2(pix_coord.x + 1, pix_coord.y - 1)));
+    var minim = 8;
+    minim = min(minim, count_neighbors(vec2(pix_coord.x + 1, pix_coord.y + 1)));
+    minim = min(minim, count_neighbors(vec2(pix_coord.x + 0, pix_coord.y + 1)));
+    minim = min(minim, count_neighbors(vec2(pix_coord.x - 1, pix_coord.y + 1)));
+    minim = min(minim, count_neighbors(vec2(pix_coord.x - 1, pix_coord.y + 0)));
+    minim = min(minim, count_neighbors(vec2(pix_coord.x + 1, pix_coord.y + 0)));
+    minim = min(minim, count_neighbors(vec2(pix_coord.x - 1, pix_coord.y - 1)));
+    minim = min(minim, count_neighbors(vec2(pix_coord.x + 0, pix_coord.y - 1)));
+    minim = min(minim, count_neighbors(vec2(pix_coord.x + 1, pix_coord.y - 1)));
 
-    return min;
+    return minim;
 }
 
 fn count_neighbors(pix_coord: vec2<i32> ) -> i32 {
@@ -495,9 +497,6 @@ fn is_black(color: vec4<f32> ) -> i32{
     return 0;
     }
 }
-
-
-
 
 fn pixelate(texture: texture_2d<f32>, texCoord: vec2<f32> , pixels: f32) -> vec2<f32> {
     let WH = textureDimensions(texture);
